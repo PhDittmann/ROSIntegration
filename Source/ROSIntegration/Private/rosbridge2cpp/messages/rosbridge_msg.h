@@ -7,6 +7,7 @@
 
 #include <bson.h>
 
+#include "ROSIntegrationCore.h"
 #include "helper.h"
 
 
@@ -84,14 +85,15 @@ public:
 	bool FromJSON(const rapidjson::Document &data)
 	{
 		if (!data.HasMember("op")) {
-			std::cerr << "[ROSBridgeMsg] Received message without 'op' field" << std::endl; // TODO: use UE_LOG
+			UE_LOG(LogROS, Error, TEXT("[ROSBridgeMsg] Received message without 'op' field"));
 			return false;
 		}
 
+		// TODO: Use FString?
 		std::string op_code = data["op"].GetString();
 		auto mapping_iterator = op_code_mapping.find(op_code);
 		if (mapping_iterator == op_code_mapping.end()) {
-			std::cerr << "[ROSBridgeMsg] Received message with invalid 'op' field: " << op_code << std::endl;
+			UE_LOG(LogROS, Error, TEXT("[ROSBridgeMsg] Received message with invalid 'op' field: %s"), *FString(UTF8_TO_TCHAR(op_code.c_str())));
 			return false;
 		}
 
@@ -108,7 +110,7 @@ public:
 	bool FromBSON(bson_t &bson)
 	{
 		if (!bson_has_field(&bson, "op")) {
-			std::cerr << "[ROSBridgeMsg] Received message without 'op' field" << std::endl;
+			UE_LOG(LogROS, Error, TEXT("[ROSBridgeMsg] Received message without 'op' field"));
 			return false;
 		}
 
@@ -117,9 +119,10 @@ public:
 		assert(key_found); // should always be true, otherwise this is contradictory to the !bson_has_field check
 		key_found = false;
 
+		// TODO: Use FString?
 		auto mapping_iterator = op_code_mapping.find(op_code);
 		if (mapping_iterator == op_code_mapping.end()) {
-			std::cerr << "[ROSBridgeMsg] Received message with invalid 'op' field: " << op_code << std::endl;
+			UE_LOG(LogROS, Error, TEXT("[ROSBridgeMsg] Received message with invalid 'op' field: %s"), *FString(UTF8_TO_TCHAR(op_code.c_str())));
 			return false;
 		}
 

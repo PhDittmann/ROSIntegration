@@ -1,7 +1,7 @@
 #pragma once
 
 #include <iostream>
-
+#include "ROSIntegrationCore.h"
 #include "messages/rosbridge_msg.h"
 
 class ROSBridgeCallServiceMsg : public ROSBridgeMsg {
@@ -35,7 +35,7 @@ public:
 
 		if (!data.HasMember("service"))
 		{
-			std::cerr << "[ROSBridgeCallServiceMsg] Received 'call_service' message without 'service' field." << std::endl; // TODO: use UE_LOG
+			UE_LOG(LogROS, Error, TEXT("[ROSBridgeCallServiceMsg] Received 'call_service' message without 'service' field."));
 			return false;
 		}
 
@@ -56,7 +56,7 @@ public:
 			return false;
 
 		if (!bson_has_field(&bson, "service")) {
-			std::cerr << "[ROSBridgeCallServiceMsg] Received 'call_service' message without 'service' field." << std::endl; // TODO: use UE_LOG
+			UE_LOG(LogROS, Error, TEXT("[ROSBridgeCallServiceMsg] Received 'call_service' message without 'service' field."));
 			return false;
 		}
 
@@ -66,7 +66,7 @@ public:
 		key_found = false;
 
 		if (!bson_has_field(&bson, "args")) {
-			std::cerr << "[ROSBridgeCallServiceMsg] Received 'call_service' message without 'args' field." << std::endl; // TODO: use UE_LOG
+			UE_LOG(LogROS, Error, TEXT("[ROSBridgeCallServiceMsg] Received 'call_service' message without 'args' field."));
 			return false;
 		}
 
@@ -96,7 +96,7 @@ public:
 		add_if_value_changed(bson, "service", service_);
 		if (args_bson_ != nullptr) {
 			if (!BSON_APPEND_DOCUMENT(&bson, "args", args_bson_))
-				std::cerr << "Error while appending 'args' bson to messge BSON" << std::endl; // TODO: use UE_LOG
+				UE_LOG(LogROS, Error, TEXT("Error while appending 'args' bson to messge BSON"));
 		}
 	}
 

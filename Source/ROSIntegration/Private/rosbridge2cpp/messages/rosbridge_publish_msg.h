@@ -2,6 +2,7 @@
 
 #include <iostream>
 
+#include "ROSIntegrationCore.h"
 #include "messages/rosbridge_msg.h"
 
 class ROSBridgePublishMsg : public ROSBridgeMsg {
@@ -33,14 +34,14 @@ public:
 			return false;
 
 		if (!data.HasMember("topic")) {
-			std::cerr << "[ROSBridgePublishMsg] Received 'publish' message without 'topic' field." << std::endl; // TODO: use UE_LOG
+			UE_LOG(LogROS, Error, TEXT("[ROSBridgePublishMsg] Received 'publish' message without 'topic' field."));
 			return false;
 		}
 
 		topic_ = data["topic"].GetString();
 
 		if (!data.HasMember("msg")) {
-			std::cerr << "[ROSBridgePublishMsg] Received 'publish' message without 'msg' field." << std::endl;
+			UE_LOG(LogROS, Error, TEXT("[ROSBridgePublishMsg] Received 'publish' message without 'msg' field."));
 			return false;
 		}
 
@@ -55,7 +56,7 @@ public:
 			return false;
 
 		if (!bson_has_field(&bson, "topic")) {
-			std::cerr << "[ROSBridgePublishMsg] Received 'publish' message without 'topic' field." << std::endl;
+			UE_LOG(LogROS, Error, TEXT("[ROSBridgePublishMsg] Received 'publish' message without 'topic' field."));
 			return false;
 		}
 
@@ -65,7 +66,7 @@ public:
 		key_found = false;
 
 		if (!bson_has_field(&bson, "msg")) {
-			std::cerr << "[ROSBridgePublishMsg] Received 'publish' message without 'msg' field." << std::endl;
+			UE_LOG(LogROS, Error, TEXT("[ROSBridgePublishMsg] Received 'publish' message without 'msg' field."));
 			return false;
 		}
 
@@ -103,7 +104,7 @@ public:
 		BSON_APPEND_BOOL(&bson, "latch", latch_);
 		if (msg_bson_ != nullptr) {
 			if (!BSON_APPEND_DOCUMENT(&bson, "msg", msg_bson_))
-				std::cerr << "Error while appending 'msg' bson to messge BSON" << std::endl;
+				UE_LOG(LogROS, Error, TEXT("Error while appending 'msg' bson to messge BSON"));
 		}
 	}
 

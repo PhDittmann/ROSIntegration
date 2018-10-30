@@ -1,14 +1,15 @@
 #include "TCPConnection.h"
 
-//#include <Runtime/Networking/Public/Interfaces/IPv4/IPv4Address.h>
-//#include <Runtime/Networking/Public/Common/TcpSocketBuilder.h>
+//#include <Interfaces/IPv4/IPv4Address.h>
+//#include <Common/TcpSocketBuilder.h>
 #include <Networking.h>
 
 #include <iomanip>
+#include "ROSIntegrationCore.h"
 
 // void messageCallback(const json &message) {
 //		std::string pkg_op = message["op"];
-//		std::cout << "Type of received message: " << pkg_op;
+//		UE_LOG(LogROS, Display, TEXT("Type of received message: %s"), *FString(UTF8_TO_TCHAR(pkg_op.c_str())));
 // }
 
 bool TCPConnection::Init(std::string ip_addr, int port)
@@ -35,7 +36,7 @@ bool TCPConnection::Init(std::string ip_addr, int port)
 		return false;
 
 	// // Setting up the receiver thread
-	std::cout << "Setting up receiver thread..." << std::endl;
+	UE_LOG(LogROS, Display, TEXT("Setting up receiver thread ..."));
 	//receiverThread = std::move(std::thread([=]() {ReceiverThreadFunction(); return 1; }));
 
 	run_receiver_thread = true;
@@ -54,7 +55,7 @@ bool TCPConnection::SendMessage(std::string data)
 
 	// TODO check errors on send
 	_sock->Send(byte_msg, data.length(), bytes_sent);
-	std::cout << "Send data: " << data << std::endl;
+	UE_LOG(LogROS, Display, TEXT("Send data: %s"), *FString(UTF8_TO_TCHAR(data.c_str())));
 
 	return true;
 }
@@ -119,7 +120,7 @@ int TCPConnection::ReceiverThreadFunction()
 			if (ConnectionState == SCS_NotConnected) {
 				std::this_thread::sleep_for(std::chrono::milliseconds(500));
 			} else {
-				std::cout << "Error on connection" << std::endl;
+				UE_LOG(LogROS, Display, TEXT("Error on connection"));
 				ReportError(rosbridge2cpp::TransportError::R2C_SOCKET_ERROR);
 				run_receiver_thread = false;
 				return_value = 2; // error while receiving from socket
@@ -156,11 +157,11 @@ int TCPConnection::ReceiverThreadFunction()
 						bson_state_read_length = false;
 						binary_buffer.SetNumUninitialized(bson_msg_length, false);
 					} else {
-						std::cerr << "bytes_read is not 4 in bson_state_read_length==true. It's: " << bytes_read << std::endl;
+						UE_LOG(LogROS, Error, TEXT("bytes_read is not 4 in bson_state_read_length==true. It's: %d"), bytes_read);
 					}
 
 				} else {
-					std::cerr << "Failed to recv() even though data is pending. Count vs. bytes_read:" << count << "," << bytes_read << std::endl;
+					UE_LOG(LogROS, Error, TEXT("Failed to recv() even though data is pending. Count vs. bytes_read:%u,%d"), count, bytes_read);
 				}
 			} else {
 				// Message retreival mode
@@ -173,17 +174,17 @@ int TCPConnection::ReceiverThreadFunction()
 						bson_state_read_length = true;
 						bson_t b;
 						if (!bson_init_static(&b, binary_buffer.GetData(), bson_msg_length_read)) {
-							std::cout << "Error on BSON parse - Ignoring message" << std::endl;
+							UE_LOG(LogROS, Display, TEXT("Error on BSON parse - Ignoring message"));
 							continue;
 						}
 						if (incoming_message_callback_bson_) {
 							incoming_message_callback_bson_(b);
 						}
 					} else {
-						std::cout << "Binary buffer num is:" << binary_buffer.Num() << std::endl;
+						UE_LOG(LogROS, Display, TEXT("Binary buffer num is: %d"), binary_buffer.Num());
 					}
 				} else {
-					std::cerr << "Failed to recv() in message retreival mode even though data is pending. Count vs. bytes_read:" << count << "," << bytes_read << std::endl;
+					UE_LOG(LogROS, Error, TEXT("Failed to recv() in message retreival mode even though data is pending. Count vs. bytes_read:%u,%d"), count, bytes_read);
 				}
 			}
 		}
@@ -198,9 +199,9 @@ int TCPConnection::ReceiverThreadFunction()
 				if (_sock->Recv(data.GetData(), data.Num(), bytes_read))
 				{
 					int32 dest_len = TStringConvert<ANSICHAR, TCHAR>::ConvertedLength((char*)(data.GetData()), data.Num());
-					UE_LOG(LogTemp, Verbose, TEXT("count is %d"), count);
-					UE_LOG(LogTemp, Verbose, TEXT("bytes_read is %d"), bytes_read);
-					UE_LOG(LogTemp, Verbose, TEXT("dest_len will be %i"), dest_len);
+					UE_LOG(LogROS, Verbose, TEXT("count is %d"), count);
+					UE_LOG(LogROS, Verbose, TEXT("bytes_read is %d"), bytes_read);
+					UE_LOG(LogROS, Verbose, TEXT("dest_len will be %i"), dest_len);
 					TCHAR* dest = new TCHAR[dest_len + 1];
 					TStringConvert<ANSICHAR, TCHAR>::Convert(dest, dest_len, (char*)(data.GetData()), data.Num());
 					dest[dest_len] = '\0';
@@ -264,7 +265,7 @@ void TCPConnection::SetTransportMode(rosbridge2cpp::ITransportLayer::TransportMo
 		bson_only_mode_ = true;
 		break;
 	default:
-		std::cerr << "Given TransportMode Not implemented " << std::endl;
+		UE_LOG(LogROS, Error, TEXT("Given TransportMode not implemented!"));
 	}
 }
 

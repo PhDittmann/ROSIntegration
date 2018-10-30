@@ -1,6 +1,7 @@
 
 #include "ros_bridge.h"
 #include "ros_topic.h"
+#include "ROSIntegrationCore.h"
 #include <bson.h>
 
 namespace rosbridge2cpp {
@@ -44,13 +45,13 @@ namespace rosbridge2cpp {
 		if (bson_only_mode()) {
 			// going from JSON to BSON
 			std::string str_repr = Helper::get_string_from_rapidjson(data);
-			std::cout << "[ROSBridge] serializing from JSON to BSON for: " << str_repr << std::endl;
+			UE_LOG(LogROS, Display, TEXT("[ROSBridge] serializing from JSON to BSON for: %s"), *FString(UTF8_TO_TCHAR(str_repr.c_str())));
 			// return transport_layer_.SendMessage(data,length);
 
 			bson_t bson;
 			bson_error_t error;
 			if (!bson_init_from_json(&bson, str_repr.c_str(), -1, &error)) {
-				printf("bson_init_from_json() failed: %s\n", error.message);
+				UE_LOG(LogROS, Display, TEXT("bson_init_from_json() failed: %s"), *FString(UTF8_TO_TCHAR(error.message)));
 				bson_destroy(&bson);
 				return false;
 			}
@@ -83,21 +84,21 @@ namespace rosbridge2cpp {
 
 			// // going from JSON to BSON
 			// std::string str_repr = Helper::get_string_from_rapidjson(data); 
-			// std::cout << "[ROSBridge] serializing from JSON to BSON for: " << str_repr << std::endl;
+			// UE_LOG(LogROS, Display, TEXT("[ROSBridge] serializing from JSON to BSON for: %s"), *FString(UTF8_TO_TCHAR(str_repr.c_str())));
 			// // return transport_layer_.SendMessage(data,length);
 			// 
 			// bson_t bson;
 			// bson_error_t error;
 			// if (!bson_init_from_json(&bson, str_repr.c_str(), -1, &error)) {
-			//   printf("bson_init_from_json() failed: %s\n", error.message);
+			//   UE_LOG(LogROS, Display, TEXT("bson_init_from_json() failed: %s"), *FString(UTF8_TO_TCHAR(error.message)));
 			//   bson_destroy(&bson);
 			//   return false;
 			// }
-			// const uint8_t *bson_data = bson_get_data (&bson);
+			// const uint8_t *bson_data = bson_get_data(&bson);
 			// uint32_t bson_size = bson.len;
-			// bool retval = transport_layer_.SendMessage(bson_data,bson_size);
+			// bool retval = transport_layer_.SendMessage(bson_data, bson_size);
 			// bson_destroy(&bson);
-			// std::cerr << "Not implemented" << std::endl;
+			// UE_LOG(LogROS, Error, TEXT("Not implemented!"));
 			// return false;
 		}
 
@@ -151,19 +152,19 @@ namespace rosbridge2cpp {
 		// Incoming topic message - dispatch to correct callback
 		std::string &incoming_topic_name = data.topic_;
 		if (registered_topic_callbacks_.find(incoming_topic_name) == registered_topic_callbacks_.end()) {
-			std::cerr << "[ROSBridge] Received message for topic " << incoming_topic_name << " where no callback has been registered before" << std::endl;
+			UE_LOG(LogROS, Error, TEXT("[ROSBridge] Received message for topic %s where no callback has been registered before"), *FString(UTF8_TO_TCHAR(incoming_topic_name.c_str())));
 			return;
 		}
 
 		if (bson_only_mode()) {
 			if (!data.full_msg_bson_) {
-				std::cerr << "[ROSBridge] Received message for topic " << incoming_topic_name << ", but full message field is missing. Aborting" << std::endl;
+				UE_LOG(LogROS, Error, TEXT("[ROSBridge] Received message for topic %s, but full message field is missing. Aborting"), *FString(UTF8_TO_TCHAR(incoming_topic_name.c_str())));
 				return;
 			}
 		}
 		else {
 			if (data.msg_json_.IsNull()) {
-				std::cerr << "[ROSBridge] Received message for topic " << incoming_topic_name << ", but 'msg' field is missing. Aborting" << std::endl;
+				UE_LOG(LogROS, Error, TEXT("[ROSBridge] Received message for topic %s, but 'msg' field is missing. Aborting"), *FString(UTF8_TO_TCHAR(incoming_topic_name.c_str())));
 				return;
 			}
 		}
@@ -182,7 +183,7 @@ namespace rosbridge2cpp {
 		auto service_response_callback_it = registered_service_callbacks_.find(incoming_service_id);
 
 		if (service_response_callback_it == registered_service_callbacks_.end()) {
-			std::cerr << "[ROSBridge] Received response for service id " << incoming_service_id << "where no callback has been registered before" << std::endl;
+			UE_LOG(LogROS, Error, TEXT("[ROSBridge] Received response for service id %s where no callback has been registered before"), *FString(UTF8_TO_TCHAR(incoming_service_id.c_str())));
 			return;
 		}
 
@@ -203,7 +204,7 @@ namespace rosbridge2cpp {
 			auto service_request_callback_it = registered_service_request_callbacks_bson_.find(incoming_service);
 
 			if (service_request_callback_it == registered_service_request_callbacks_bson_.end()) {
-				std::cerr << "[ROSBridge] Received service request for service :" << incoming_service << " where no callback has been registered before" << std::endl;
+				UE_LOG(LogROS, Error, TEXT("[ROSBridge] Received service request for service: %s where no callback has been registered before"), *FString(UTF8_TO_TCHAR(incoming_service.c_str())));
 				return;
 			}
 			service_request_callback_it->second(data);
@@ -213,7 +214,7 @@ namespace rosbridge2cpp {
 			auto service_request_callback_it = registered_service_request_callbacks_.find(incoming_service);
 
 			if (service_request_callback_it == registered_service_request_callbacks_.end()) {
-				std::cerr << "[ROSBridge] Received service request for service :" << incoming_service << " where no bson callback has been registered before" << std::endl;
+				UE_LOG(LogROS, Error, TEXT("[ROSBridge] Received service request for service: %s where no bson callback has been registered before"), *FString(UTF8_TO_TCHAR(incoming_service.c_str())));
 				return;
 			}
 			rapidjson::Document response_allocator;
@@ -243,7 +244,7 @@ namespace rosbridge2cpp {
 				return;
 			}
 
-			std::cerr << "Failed to parse publish message into class. Skipping message." << std::endl;
+			UE_LOG(LogROS, Error, TEXT("Failed to parse publish message into class. Skipping message."));
 		}
 
 		// Service responses for service we called earlier
@@ -253,7 +254,7 @@ namespace rosbridge2cpp {
 				HandleIncomingServiceResponseMessage(m);
 				return;
 			}
-			std::cerr << "Failed to parse service_response message into class. Skipping message." << std::endl;
+			UE_LOG(LogROS, Error, TEXT("Failed to parse service_response message into class. Skipping message."));
 		}
 
 		// Service Requests to a service that we advertised in ROSService
@@ -278,7 +279,7 @@ namespace rosbridge2cpp {
 				return;
 			}
 
-			std::cerr << "Failed to parse publish message into class. Skipping message." << std::endl;
+			UE_LOG(LogROS, Error, TEXT("Failed to parse publish message into class. Skipping message."));
 		}
 
 		// Service responses for service we called earlier
@@ -289,7 +290,7 @@ namespace rosbridge2cpp {
 				HandleIncomingServiceResponseMessage(m);
 				return;
 			}
-			std::cerr << "Failed to parse service_response message into class. Skipping message." << std::endl;
+			UE_LOG(LogROS, Error, TEXT("Failed to parse service_response message into class. Skipping message."));
 		}
 
 		// Service Requests to a service that we advertised in ROSService
@@ -352,7 +353,7 @@ namespace rosbridge2cpp {
 		spinlock::scoped_lock_wait_for_short_task lock(change_topics_mutex_);
 
 		if (registered_topic_callbacks_.find(topic_name) == registered_topic_callbacks_.end()) {
-			std::cerr << "[ROSBridge] UnregisterTopicCallback called but given topic name '" << topic_name << "' not in map." << std::endl;
+			UE_LOG(LogROS, Error, TEXT("[ROSBridge] UnregisterTopicCallback called but given topic name '%s' not in map."), *FString(UTF8_TO_TCHAR(topic_name.c_str())));
 			return false;
 		}
 
@@ -363,7 +364,7 @@ namespace rosbridge2cpp {
 			++topic_callback_it) {
 
 			if (*topic_callback_it == callback_handle) {
-				std::cout << "[ROSBridge] Found CB in UnregisterTopicCallback. Deleting it ... " << std::endl;
+				UE_LOG(LogROS, Display, TEXT("[ROSBridge] Found CB in UnregisterTopicCallback. Deleting it ... "));
 				r_list_of_callbacks.erase(topic_callback_it);
 				return true;
 			}
@@ -429,7 +430,7 @@ namespace rosbridge2cpp {
 					if (num_retries_left <= 0) {
 						run_publisher_queue_thread_ = false;
 						return_value = 2;
-						std::cout << "[ROSBridge] Lost connection to ROSBridge!" << std::endl;
+						UE_LOG(LogROS, Display, TEXT("[ROSBridge] Lost connection to ROSBridge!"));
 					}
 				}
 				else

@@ -1,4 +1,5 @@
 #include "ros_topic.h"
+#include "ROSIntegrationCore.h"
 
 namespace rosbridge2cpp {
 
@@ -46,8 +47,8 @@ namespace rosbridge2cpp {
 			return false;
 
 		if (!ros_.UnregisterTopicCallback(topic_name_, callback_handle)) { // Unregister callback in ROSBridge
-		  // failed to unregister callback - maybe the method is different from already registered callbacks
-			std::cerr << "[ROSTopic] Passed unknown callback to ROSTopic::unsubscribe. This callback is not registered in the ROSBridge instance. Aborting..." << std::endl;
+			// failed to unregister callback - maybe the method is different from already registered callbacks
+			UE_LOG(LogROS, Error, TEXT("[ROSTopic] Passed unknown callback to ROSTopic::unsubscribe. This callback is not registered in the ROSBridge instance. Aborting ..."));
 			return false;
 		}
 
@@ -56,10 +57,10 @@ namespace rosbridge2cpp {
 		if (subscription_counter_ > 0)
 			return true;
 
-		std::cout << "[ROSTopic] No callbacks registered anymore - unsubscribe from topic" << std::endl;
+		UE_LOG(LogROS, Display, TEXT("[ROSTopic] No callbacks registered anymore - unsubscribe from topic"));
 		// Handle unsubscription when no callback is registered anymore
-		// rapidjson::Document cmd;
-		// cmd.SetObject();
+		//rapidjson::Document cmd;
+		//cmd.SetObject();
 
 		ROSBridgeUnsubscribeMsg cmd(true);
 		cmd.id_ = subscribe_id_;
@@ -130,7 +131,7 @@ namespace rosbridge2cpp {
 	//   cmd.AddMember("msg", message, cmd.GetAllocator());
 	//   cmd.AddMember("latch", latch_, cmd.GetAllocator());
 
-	//   std::cout << "[ROSTopic] Publishing data " << Helper::get_string_from_rapidjson(cmd);
+	//   UE_LOG(LogROS, Display, TEXT("[ROSTopic] Publishing data %s"), *FString(UTF8_TO_TCHAR(Helper::get_string_from_rapidjson(cmd).c_str())));
 
 	//   ros_.SendMessage(cmd);
 	// }
